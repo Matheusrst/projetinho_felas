@@ -3,12 +3,19 @@
 namespace Source\App;
 
 use Source\Core\Controller;
+use Source\Core\Session;
+use Source\Core\View;
 use Source\Models\Auth;
+use Source\Models\CafeApp\AppCategory;
+use Source\Models\CafeApp\AppInvoice;
+use Source\Models\CafeApp\AppWallet;
+use Source\Models\Post;
 use Source\Models\Report\Access;
 use Source\Models\Report\Online;
 use Source\Models\User;
-use Source\Support\Message;
-use Shered\views\email;
+use Source\Support\Email;
+use Source\Support\Thumb;
+use Source\Support\Upload;
 
 /**
  * Class App
@@ -378,13 +385,12 @@ public function accounts()
             list($m, $y) = explode("/", $data["date"]);
         }
 
-        $json["onpaid"] =
-
-        $json["reload"] = true;
+        $json["onpaid"] = (new AppInvoice())->balance($this->user, $y, $m, $invoice->type);
         echo json_encode($json);
+
     }
 
-   /**
+  /**
    * invoice function
    *
    * @return void
@@ -481,12 +487,80 @@ public function accounts()
             ->fetch(true)
         ]);
     }
+    
+    /**
+     * remove function
+     *
+     * @param array $data
+     * @return void
+     */
+    public function remove (array $data): void 
+    {
+        $invoice = (new AppInvoice())->find("user_id = :user AND id = :invoice",
+        "user={$this->user->id}&invoice={$data["invoice"]}")->fetch();
+
+        if ($invoice) {
+            $invoice->destroy();
+        }
+
+        $this->message->success("Pronto, fatura remolvida ciom sucesso!")->flash();
+        $json["redirect"] = url("/app");
+        echo json_encode($json);
+    }
 
     /**
-     * APP PROFILE (Perfil)
+     * profile function
+     *
+     * @param array|null $data
+     * @return void
      */
-    public function profile()
+    public function profile(?array $data): void 
     {
+        if(!empty($data["update"])){
+            list($d, $m, $y) = explode("/", $data["datebirth"]);
+            $user = (new User())->findById($this->user->id);
+            $user->first_name = $data["fist_name"];
+            $user->last_name = $data["last_name"];
+            $user->genere = $data["genere"];
+            $user->datebirth = "{$y}-{$m}-{$d}";
+            $user->document = preg_replace("/[0-9]/", "", $data["document"]);
+
+            if(!empty($_FILES["photo"])){
+                $file = $_FILES["photo"];
+                $upload = new Upload();
+
+                if($this->user->photo()){
+                    (new Thumb())->flush("storage/{$this->user->photo}");
+                    $upload->remove("storege/{$this->user->photo}");
+                }
+
+                if(!$user->photo = $upload->image($file, "{$user->first_name} {$user->last_name} ".time(), 360));
+                $json["message"] = $upload->message()->before("Ooops {$this->user->first_name}! ")->after(".")->render();
+                echo json_encode ($json);
+                return;
+            }
+
+            if(!empty($data["password"])) {
+                if(empty($data["password"]) || $data["password"] != $data["password_re"]) {
+                    $json["message"] = $this->message->warning("para efetuar a alteração informe sua nova senha e depois repita")->render();
+                    echo json_encode($json);
+                    return;
+                }
+
+                $user->password = $data["password"];
+            }
+
+            if(!user->save()){
+                $json["message"] = $user->message()->render();
+                echo json_encode($json);
+                return;
+            }
+
+            $json["message"] = $this->message->success("Dados atualizada com sucesso!")->render();
+            echo json_encode($json);
+            return;
+        }
+
         $head = $this->seo->render(
             "Meu perfil - " . CONF_SITE_NAME,
             CONF_SITE_DESC,
@@ -496,7 +570,10 @@ public function accounts()
         );
 
         echo $this->view->render("profile", [
-            "head" => $head
+            "head" => $head,
+            "user" => $this->user,
+            "photo" => ($this->user->photo() ? image($this->user->photo, 360, 360) :
+            theme("/assests/images/avatar.jpg", CONF_VIEW_APP))
         ]);
     }
 
