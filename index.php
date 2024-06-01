@@ -60,15 +60,18 @@ $route->get("/receber", "App:income");
 $route->get("/receber/{status}/{category}/{date}", "App:income");
 $route->get("/pagar", "App:expense");
 $route->get("/pagar/{status}/{category}/{date}", "App:expense");
+$route->post("/fixas", "App:fixed");
 $route->get("/fatura/{invoice_id}", "App:invoice");
 $route->get("/perfil", "App:profile");
 $route->get("/sair", "App:logout");
 
 $route->post("/luanch", "App:launch");
 $route->post("/invoice/{invoice}", "App:invoice");
+$route->post("/removve/{invoice}", "App:remove");
 $route->post("/support", "App:support");
 $route->post("/onpaid", "App:onpaid");
 $route->post("/filter", "App:filter");
+$route->post("/profile", "App:profile");
 
 /**
  * ERROR ROUTES
