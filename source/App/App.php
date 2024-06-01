@@ -41,7 +41,18 @@ class App extends Controller
         (new Access())->report();
         (new Online())->report();
 
+        (new AppWallet())->start($this->user);
         (new appInvoice())->fixed($this->user, 3);
+
+        //UNCOMFIRMED EMAIL 
+        if ($this->user->status != "confirmed") {
+            $session = new Session();
+            if (!$session->has("appconfirmed")) {
+                $this->message->info("Acesse seu email para confirmar seu cadastro")->flash();
+                $session->set("appconfirmed", true);
+                (new Auth())->register($this->user);
+            }
+        }
     }
 
     /**
