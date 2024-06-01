@@ -248,6 +248,7 @@ class Web extends Controller
             $login = $auth->login($data['email'], $data['password'], $save);
 
             if ($login) {
+                $this->message->success("logado com sucesso, seja bem vindo(a) :)")->flsah();
                 $json['redirect'] = url("/app");
             } else {
                 $json['message'] = $auth->message()->render();
