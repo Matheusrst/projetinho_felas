@@ -162,6 +162,28 @@ class App extends Controller
         ]);
     }
 
+    /**
+     * fixed cont function
+     *
+     * @return void
+     */
+    public function fixed(): void 
+    {
+        $head = $this->seo->render(
+            "Minhas contas fixas - " . CONF_SITE_NAME,
+            CONF_SITE_DESC,
+            url(),
+            theme("/assets/images/share.jpg"),
+            false
+        );
+
+        echo $this->view->render("recurrences", [
+            "head" => $head,
+            "invoices" => (new appInvoices())->find("user_id = :user AND type IN('fixed_expense')",
+            "user== {$this->user->id}")->fetch(true)
+        ]);
+    }
+
 
     //CHART
 public function accounts() 
